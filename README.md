@@ -1,6 +1,6 @@
 # Tic-Tac-Toe WinForms (C#)
 
-A simple 2-player local Tic-Tac-Toe desktop game built with **C#** and **Windows Forms**.
+A simple Tic-Tac-Toe desktop game built with **C#** and **Windows Forms**.
 
 ## Requirements
 
@@ -16,10 +16,20 @@ A simple 2-player local Tic-Tac-Toe desktop game built with **C#** and **Windows
 ## Features
 
 - 3x3 board
-- Two local players on one computer
-- X starts first
+- Two game modes:
+  - Player vs Player
+  - Player vs Computer
+- Mode selection at the start of each new game
+- In Player vs Computer mode:
+  - Human is **X** and moves first
+  - Computer is **O**
+  - Computer automatically plays after the human move
+  - Computer logic:
+    - Win in one move when possible
+    - Block the player's win in one move
+    - Otherwise prefer center, then corners, then any free cell
 - Current turn display
 - Win and draw detection
 - Occupied cells cannot be clicked
-- End-of-game message
+- No extra moves allowed after game over
 - **New Game** button to restart

@@ -5,10 +5,17 @@ namespace TicTacToeWinForms;
 
 public class MainForm : Form
 {
+    private enum GameMode
+    {
+        PlayerVsPlayer,
+        PlayerVsComputer
+    }
+
     private readonly Button[,] _boardButtons = new Button[3, 3];
     private readonly Label _turnLabel;
     private readonly Button _newGameButton;
 
+    private GameMode _gameMode = GameMode.PlayerVsPlayer;
     private char _currentPlayer = 'X';
     private int _movesPlayed;
     private bool _gameOver;
@@ -88,25 +95,154 @@ public class MainForm : Form
             return;
         }
 
-        clickedButton.Text = _currentPlayer.ToString();
-        _movesPlayed++;
+        // In Player vs Computer mode, the human always plays as X.
+        if (_gameMode == GameMode.PlayerVsComputer && _currentPlayer != 'X')
+        {
+            return;
+        }
 
+        MakeMove(clickedButton, _currentPlayer);
+
+        if (TryFinishGame())
+        {
+            return;
+        }
+
+        _currentPlayer = GetOtherPlayer(_currentPlayer);
+        _turnLabel.Text = $"Current turn: {_currentPlayer}";
+
+        if (_gameMode == GameMode.PlayerVsComputer)
+        {
+            MakeComputerMove();
+        }
+    }
+
+    private void MakeComputerMove()
+    {
+        if (_gameOver || _currentPlayer != 'O')
+        {
+            return;
+        }
+
+        Button? computerButton = FindWinningMove('O')
+            ?? FindWinningMove('X')
+            ?? GetCenterMove()
+            ?? GetCornerMove()
+            ?? GetFirstFreeMove();
+
+        if (computerButton is null)
+        {
+            return;
+        }
+
+        MakeMove(computerButton, 'O');
+
+        if (TryFinishGame())
+        {
+            return;
+        }
+
+        _currentPlayer = 'X';
+        _turnLabel.Text = "Current turn: X";
+    }
+
+    private void MakeMove(Button button, char player)
+    {
+        button.Text = player.ToString();
+        _movesPlayed++;
+    }
+
+    private bool TryFinishGame()
+    {
         if (HasPlayerWon(_currentPlayer))
         {
             _gameOver = true;
+            _turnLabel.Text = "Game over";
             MessageBox.Show($"Player {_currentPlayer} wins!", "Game Over", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            return;
+            return true;
         }
 
         if (_movesPlayed == 9)
         {
             _gameOver = true;
+            _turnLabel.Text = "Game over";
             MessageBox.Show("It's a draw!", "Game Over", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            return;
+            return true;
         }
 
-        _currentPlayer = _currentPlayer == 'X' ? 'O' : 'X';
-        _turnLabel.Text = $"Current turn: {_currentPlayer}";
+        return false;
+    }
+
+    private static char GetOtherPlayer(char player)
+    {
+        return player == 'X' ? 'O' : 'X';
+    }
+
+    private Button? FindWinningMove(char player)
+    {
+        for (int row = 0; row < 3; row++)
+        {
+            for (int col = 0; col < 3; col++)
+            {
+                if (!string.IsNullOrEmpty(_boardButtons[row, col].Text))
+                {
+                    continue;
+                }
+
+                _boardButtons[row, col].Text = player.ToString();
+                bool isWinningMove = HasPlayerWon(player);
+                _boardButtons[row, col].Text = string.Empty;
+
+                if (isWinningMove)
+                {
+                    return _boardButtons[row, col];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private Button? GetCenterMove()
+    {
+        return string.IsNullOrEmpty(_boardButtons[1, 1].Text) ? _boardButtons[1, 1] : null;
+    }
+
+    private Button? GetCornerMove()
+    {
+        (int row, int col)[] corners =
+        {
+            (0, 0),
+            (0, 2),
+            (2, 0),
+            (2, 2)
+        };
+
+        foreach (var (row, col) in corners)
+        {
+            if (string.IsNullOrEmpty(_boardButtons[row, col].Text))
+            {
+                return _boardButtons[row, col];
+            }
+        }
+
+        return null;
+    }
+
+    private Button? GetFirstFreeMove()
+    {
+        for (int row = 0; row < 3; row++)
+        {
+            for (int col = 0; col < 3; col++)
+            {
+                if (string.IsNullOrEmpty(_boardButtons[row, col].Text))
+                {
+                    return _boardButtons[row, col];
+                }
+            }
+        }
+
+        return null;
     }
 
     private bool HasPlayerWon(char player)
@@ -141,6 +277,8 @@ public class MainForm : Form
 
     private void StartNewGame()
     {
+        SelectGameMode();
+
         _currentPlayer = 'X';
         _movesPlayed = 0;
         _gameOver = false;
@@ -153,5 +291,18 @@ public class MainForm : Form
                 _boardButtons[row, col].Text = string.Empty;
             }
         }
+    }
+
+    private void SelectGameMode()
+    {
+        var modeChoice = MessageBox.Show(
+            "Choose game mode:\nYes = Player vs Computer\nNo = Player vs Player",
+            "New Game",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question);
+
+        _gameMode = modeChoice == DialogResult.Yes
+            ? GameMode.PlayerVsComputer
+            : GameMode.PlayerVsPlayer;
     }
 }
